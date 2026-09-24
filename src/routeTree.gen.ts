@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BibliotecaRouteImport } from './routes/biblioteca'
+import { Route as FavoritosRouteImport } from './routes/favoritos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BibliotecaRoute = BibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritosRoute = FavoritosRouteImport.update({
+  id: '/favoritos',
+  path: '/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/favoritos': typeof FavoritosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/favoritos': typeof FavoritosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/biblioteca': typeof BibliotecaRoute
+  '/favoritos': typeof FavoritosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/biblioteca' | '/favoritos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/biblioteca' | '/favoritos'
+  id: '__root__' | '/' | '/biblioteca' | '/favoritos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BibliotecaRoute: typeof BibliotecaRoute
+  FavoritosRoute: typeof FavoritosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biblioteca': {
+      id: '/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof BibliotecaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favoritos': {
+      id: '/favoritos'
+      path: '/favoritos'
+      fullPath: '/favoritos'
+      preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BibliotecaRoute: BibliotecaRoute,
+  FavoritosRoute: FavoritosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
