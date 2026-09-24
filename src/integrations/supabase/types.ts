@@ -14,16 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categorias: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      flyers: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          created_by: string | null
+          data_publicacao: string
+          descricao: string | null
+          destaque: boolean
+          id: string
+          pdf_url: string | null
+          slug: string
+          thumbnail_url: string | null
+          titulo: string
+          updated_at: string
+          visualizacoes: number
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          created_by?: string | null
+          data_publicacao?: string
+          descricao?: string | null
+          destaque?: boolean
+          id?: string
+          pdf_url?: string | null
+          slug: string
+          thumbnail_url?: string | null
+          titulo: string
+          updated_at?: string
+          visualizacoes?: number
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          data_publicacao?: string
+          descricao?: string | null
+          destaque?: boolean
+          id?: string
+          pdf_url?: string | null
+          slug?: string
+          thumbnail_url?: string | null
+          titulo?: string
+          updated_at?: string
+          visualizacoes?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ensure_profile: { Args: never; Returns: undefined }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      registar_visualizacao: { Args: { _slug: string }; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +274,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "editor", "viewer"],
+    },
   },
 } as const
