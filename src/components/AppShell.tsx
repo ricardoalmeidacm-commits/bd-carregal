@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Library, Heart, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Marca } from "@/components/Marca";
+import { MarcaHorizontal } from "@/components/Marca";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -27,16 +27,8 @@ export function AppShell({
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md">
         <div className="app-shell flex items-center gap-3 py-3">
-          <Link to="/" className="flex items-center gap-3">
-            <Marca size={36} />
-            <span className="leading-tight">
-              <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Museu Municipal
-              </span>
-              <span className="block font-display text-[0.95rem] font-semibold text-primary">
-                Carregal do Sal
-              </span>
-            </span>
+          <Link to="/" className="flex items-center" aria-label="Início">
+            <MarcaHorizontal height={40} />
           </Link>
         </div>
       </header>
