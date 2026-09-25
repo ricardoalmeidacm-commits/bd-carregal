@@ -27,7 +27,7 @@ function Redefinir() {
     setOcupado(true);
     const { error } = await supabase.auth.updateUser({ password });
     setOcupado(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await supabase.rpc("ensure_profile");
     toast.success("Palavra-passe atualizada");
     navigate({ to: "/admin", replace: true });

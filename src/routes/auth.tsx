@@ -112,7 +112,7 @@ function Autenticacao() {
             <button
               type="button"
               onClick={async () => {
-                if (!email) return toast.error("Indique primeiro o email");
+                if (!email) { toast.error("Indique primeiro o email"); return; }
                 const { error } = await supabase.auth.resetPasswordForEmail(email, {
                   redirectTo: `${window.location.origin}/reset-password`,
                 });

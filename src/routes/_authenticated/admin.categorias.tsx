@@ -33,7 +33,7 @@ function Categorias() {
     const { error } = await supabase
       .from("categorias")
       .insert({ nome: nome.trim(), slug: criarSlug(nome), ordem });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setNome("");
     toast.success("Categoria criada");
     qc.invalidateQueries({ queryKey: ["categorias"] });
@@ -42,7 +42,7 @@ function Categorias() {
   async function remover(c: Categoria) {
     if (!confirm(`Remover a categoria "${c.nome}"?`)) return;
     const { error } = await supabase.from("categorias").delete().eq("id", c.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["categorias"] });
   }
 

@@ -15,7 +15,7 @@ function dataPt(valor: string) {
   }
 }
 
-export function FlyerCard({ flyer, capa }: { flyer: Flyer; capa?: string }) {
+export function FlyerCard({ flyer, capa }: { flyer: Flyer; capa?: string | undefined }) {
   return (
     <Link
       to="/flyer/$slug"
