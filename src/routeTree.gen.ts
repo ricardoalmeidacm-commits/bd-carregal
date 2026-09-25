@@ -16,6 +16,10 @@ import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as FlyerSlugRouteImport } from './routes/flyer.$slug'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminUtilizadoresRouteImport } from './routes/_authenticated/admin.utilizadores'
+import { Route as AuthenticatedAdminFolhetosIndexRouteImport } from './routes/_authenticated/admin.folhetos.index'
+import { Route as AuthenticatedAdminFolhetosIdRouteImport } from './routes/_authenticated/admin.folhetos.$id'
+import { Route as AuthenticatedAdminFolhetosNovoRouteImport } from './routes/_authenticated/admin.folhetos.novo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,6 +55,30 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminUtilizadoresRoute =
+  AuthenticatedAdminUtilizadoresRouteImport.update({
+    id: '/admin/utilizadores',
+    path: '/admin/utilizadores',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminFolhetosIndexRoute =
+  AuthenticatedAdminFolhetosIndexRouteImport.update({
+    id: '/admin/folhetos/',
+    path: '/admin/folhetos/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminFolhetosIdRoute =
+  AuthenticatedAdminFolhetosIdRouteImport.update({
+    id: '/admin/folhetos/$id',
+    path: '/admin/folhetos/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminFolhetosNovoRoute =
+  AuthenticatedAdminFolhetosNovoRouteImport.update({
+    id: '/admin/folhetos/novo',
+    path: '/admin/folhetos/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -58,7 +86,11 @@ export interface FileRoutesByFullPath {
   '/biblioteca': typeof BibliotecaRoute
   '/favoritos': typeof FavoritosRoute
   '/flyer/$slug': typeof FlyerSlugRoute
+  '/admin/utilizadores': typeof AuthenticatedAdminUtilizadoresRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/folhetos/$id': typeof AuthenticatedAdminFolhetosIdRoute
+  '/admin/folhetos/novo': typeof AuthenticatedAdminFolhetosNovoRoute
+  '/admin/folhetos/': typeof AuthenticatedAdminFolhetosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -66,7 +98,11 @@ export interface FileRoutesByTo {
   '/biblioteca': typeof BibliotecaRoute
   '/favoritos': typeof FavoritosRoute
   '/flyer/$slug': typeof FlyerSlugRoute
+  '/admin/utilizadores': typeof AuthenticatedAdminUtilizadoresRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/folhetos/$id': typeof AuthenticatedAdminFolhetosIdRoute
+  '/admin/folhetos/novo': typeof AuthenticatedAdminFolhetosNovoRoute
+  '/admin/folhetos': typeof AuthenticatedAdminFolhetosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,14 +112,37 @@ export interface FileRoutesById {
   '/biblioteca': typeof BibliotecaRoute
   '/favoritos': typeof FavoritosRoute
   '/flyer/$slug': typeof FlyerSlugRoute
+  '/_authenticated/admin/utilizadores': typeof AuthenticatedAdminUtilizadoresRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/folhetos/$id': typeof AuthenticatedAdminFolhetosIdRoute
+  '/_authenticated/admin/folhetos/novo': typeof AuthenticatedAdminFolhetosNovoRoute
+  '/_authenticated/admin/folhetos/': typeof AuthenticatedAdminFolhetosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/biblioteca' | '/favoritos' | '/flyer/$slug' | '/admin/'
+    | '/'
+    | '/auth'
+    | '/biblioteca'
+    | '/favoritos'
+    | '/flyer/$slug'
+    | '/admin/utilizadores'
+    | '/admin/'
+    | '/admin/folhetos/$id'
+    | '/admin/folhetos/novo'
+    | '/admin/folhetos/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/biblioteca' | '/favoritos' | '/flyer/$slug' | '/admin'
+  to:
+    | '/'
+    | '/auth'
+    | '/biblioteca'
+    | '/favoritos'
+    | '/flyer/$slug'
+    | '/admin/utilizadores'
+    | '/admin'
+    | '/admin/folhetos/$id'
+    | '/admin/folhetos/novo'
+    | '/admin/folhetos'
   id:
     | '__root__'
     | '/'
@@ -92,7 +151,11 @@ export interface FileRouteTypes {
     | '/biblioteca'
     | '/favoritos'
     | '/flyer/$slug'
+    | '/_authenticated/admin/utilizadores'
     | '/_authenticated/admin/'
+    | '/_authenticated/admin/folhetos/$id'
+    | '/_authenticated/admin/folhetos/novo'
+    | '/_authenticated/admin/folhetos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,15 +218,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/utilizadores': {
+      id: '/_authenticated/admin/utilizadores'
+      path: '/admin/utilizadores'
+      fullPath: '/admin/utilizadores'
+      preLoaderRoute: typeof AuthenticatedAdminUtilizadoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/folhetos/': {
+      id: '/_authenticated/admin/folhetos/'
+      path: '/admin/folhetos'
+      fullPath: '/admin/folhetos/'
+      preLoaderRoute: typeof AuthenticatedAdminFolhetosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/folhetos/$id': {
+      id: '/_authenticated/admin/folhetos/$id'
+      path: '/admin/folhetos/$id'
+      fullPath: '/admin/folhetos/$id'
+      preLoaderRoute: typeof AuthenticatedAdminFolhetosIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/folhetos/novo': {
+      id: '/_authenticated/admin/folhetos/novo'
+      path: '/admin/folhetos/novo'
+      fullPath: '/admin/folhetos/novo'
+      preLoaderRoute: typeof AuthenticatedAdminFolhetosNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminUtilizadoresRoute: typeof AuthenticatedAdminUtilizadoresRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminFolhetosIdRoute: typeof AuthenticatedAdminFolhetosIdRoute
+  AuthenticatedAdminFolhetosNovoRoute: typeof AuthenticatedAdminFolhetosNovoRoute
+  AuthenticatedAdminFolhetosIndexRoute: typeof AuthenticatedAdminFolhetosIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminUtilizadoresRoute: AuthenticatedAdminUtilizadoresRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminFolhetosIdRoute: AuthenticatedAdminFolhetosIdRoute,
+  AuthenticatedAdminFolhetosNovoRoute: AuthenticatedAdminFolhetosNovoRoute,
+  AuthenticatedAdminFolhetosIndexRoute: AuthenticatedAdminFolhetosIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
