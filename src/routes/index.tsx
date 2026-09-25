@@ -5,7 +5,6 @@ import { useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { FlyerCard, FlyerCardSkeleton } from "@/components/FlyerCard";
-import { Marca } from "@/components/Marca";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { supabase } from "@/integrations/supabase/client";
 import type { Categoria, Flyer } from "@/lib/types";
@@ -83,8 +82,7 @@ function Inicio() {
   return (
     <AppShell>
       <section className="pt-2 text-center">
-        <Marca size={64} className="mx-auto" />
-        <p className="eyebrow mt-4">Museu Municipal de Carregal do Sal</p>
+        <p className="eyebrow">Museu Municipal de Carregal do Sal</p>
         <h1 className="mt-1 font-display text-[2.1rem] font-semibold leading-[1.1] tracking-tight">
           Biblioteca Digital
         </h1>

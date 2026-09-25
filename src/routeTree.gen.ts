@@ -14,8 +14,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as FlyerSlugRouteImport } from './routes/flyer.$slug'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminCategoriasRouteImport } from './routes/_authenticated/admin.categorias'
 import { Route as AuthenticatedAdminUtilizadoresRouteImport } from './routes/_authenticated/admin.utilizadores'
 import { Route as AuthenticatedAdminFolhetosIndexRouteImport } from './routes/_authenticated/admin.folhetos.index'
 import { Route as AuthenticatedAdminFolhetosIdRouteImport } from './routes/_authenticated/admin.folhetos.$id'
@@ -45,6 +47,11 @@ const FavoritosRoute = FavoritosRouteImport.update({
   path: '/favoritos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FlyerSlugRoute = FlyerSlugRouteImport.update({
   id: '/flyer/$slug',
   path: '/flyer/$slug',
@@ -55,6 +62,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminCategoriasRoute =
+  AuthenticatedAdminCategoriasRouteImport.update({
+    id: '/admin/categorias',
+    path: '/admin/categorias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminUtilizadoresRoute =
   AuthenticatedAdminUtilizadoresRouteImport.update({
     id: '/admin/utilizadores',
@@ -85,7 +98,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/biblioteca': typeof BibliotecaRoute
   '/favoritos': typeof FavoritosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/flyer/$slug': typeof FlyerSlugRoute
+  '/admin/categorias': typeof AuthenticatedAdminCategoriasRoute
   '/admin/utilizadores': typeof AuthenticatedAdminUtilizadoresRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/folhetos/$id': typeof AuthenticatedAdminFolhetosIdRoute
@@ -97,7 +112,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/biblioteca': typeof BibliotecaRoute
   '/favoritos': typeof FavoritosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/flyer/$slug': typeof FlyerSlugRoute
+  '/admin/categorias': typeof AuthenticatedAdminCategoriasRoute
   '/admin/utilizadores': typeof AuthenticatedAdminUtilizadoresRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/folhetos/$id': typeof AuthenticatedAdminFolhetosIdRoute
@@ -111,7 +128,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/biblioteca': typeof BibliotecaRoute
   '/favoritos': typeof FavoritosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/flyer/$slug': typeof FlyerSlugRoute
+  '/_authenticated/admin/categorias': typeof AuthenticatedAdminCategoriasRoute
   '/_authenticated/admin/utilizadores': typeof AuthenticatedAdminUtilizadoresRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/folhetos/$id': typeof AuthenticatedAdminFolhetosIdRoute
@@ -125,7 +144,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/biblioteca'
     | '/favoritos'
+    | '/reset-password'
     | '/flyer/$slug'
+    | '/admin/categorias'
     | '/admin/utilizadores'
     | '/admin/'
     | '/admin/folhetos/$id'
@@ -137,7 +158,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/biblioteca'
     | '/favoritos'
+    | '/reset-password'
     | '/flyer/$slug'
+    | '/admin/categorias'
     | '/admin/utilizadores'
     | '/admin'
     | '/admin/folhetos/$id'
@@ -150,7 +173,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/biblioteca'
     | '/favoritos'
+    | '/reset-password'
     | '/flyer/$slug'
+    | '/_authenticated/admin/categorias'
     | '/_authenticated/admin/utilizadores'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/folhetos/$id'
@@ -164,6 +189,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BibliotecaRoute: typeof BibliotecaRoute
   FavoritosRoute: typeof FavoritosRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   FlyerSlugRoute: typeof FlyerSlugRoute
 }
 
@@ -204,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavoritosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/flyer/$slug': {
       id: '/flyer/$slug'
       path: '/flyer/$slug'
@@ -216,6 +249,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/categorias': {
+      id: '/_authenticated/admin/categorias'
+      path: '/admin/categorias'
+      fullPath: '/admin/categorias'
+      preLoaderRoute: typeof AuthenticatedAdminCategoriasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/utilizadores': {
@@ -250,6 +290,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminCategoriasRoute: typeof AuthenticatedAdminCategoriasRoute
   AuthenticatedAdminUtilizadoresRoute: typeof AuthenticatedAdminUtilizadoresRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminFolhetosIdRoute: typeof AuthenticatedAdminFolhetosIdRoute
@@ -258,6 +299,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminCategoriasRoute: AuthenticatedAdminCategoriasRoute,
   AuthenticatedAdminUtilizadoresRoute: AuthenticatedAdminUtilizadoresRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminFolhetosIdRoute: AuthenticatedAdminFolhetosIdRoute,
@@ -274,6 +316,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BibliotecaRoute: BibliotecaRoute,
   FavoritosRoute: FavoritosRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   FlyerSlugRoute: FlyerSlugRoute,
 }
 export const routeTree = rootRouteImport

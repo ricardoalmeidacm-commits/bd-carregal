@@ -108,6 +108,22 @@ function Autenticacao() {
           >
             {modo === "entrar" ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
           </button>
+          {modo === "entrar" && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) { toast.error("Indique primeiro o email"); return; }
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                if (error) toast.error(error.message);
+                else toast.success("Enviámos um email para redefinir a palavra-passe.");
+              }}
+              className="w-full text-center text-xs text-primary"
+            >
+              Esqueci-me da palavra-passe
+            </button>
+          )}
         </form>
       </div>
     </div>

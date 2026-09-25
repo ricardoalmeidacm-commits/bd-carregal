@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileStack, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, FileStack, Users, LogOut, Tags } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Marca } from "@/components/Marca";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/admin", label: "Painel", icon: LayoutDashboard },
   { to: "/admin/folhetos", label: "Folhetos", icon: FileStack },
+  { to: "/admin/categorias", label: "Categorias", icon: Tags },
   { to: "/admin/utilizadores", label: "Utilizadores", icon: Users },
 ] as const;
 
@@ -22,7 +23,7 @@ export function AdminShell({
 }: {
   children: ReactNode;
   titulo: string;
-  subtitulo?: string;
+  subtitulo?: string | undefined;
   exigirAdmin?: boolean;
 }) {
   const { sessao } = useSessao();
