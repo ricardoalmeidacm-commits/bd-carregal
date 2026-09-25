@@ -19,7 +19,7 @@ export function AppShell({
 }: {
   children: ReactNode;
   titulo?: string;
-  subtitulo?: string;
+  subtitulo?: string | undefined;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 

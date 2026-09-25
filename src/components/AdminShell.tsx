@@ -23,7 +23,7 @@ export function AdminShell({
 }: {
   children: ReactNode;
   titulo: string;
-  subtitulo?: string;
+  subtitulo?: string | undefined;
   exigirAdmin?: boolean;
 }) {
   const { sessao } = useSessao();
