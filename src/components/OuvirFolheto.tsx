@@ -157,6 +157,41 @@ function resumir(frases: Frase[]): Frase[] {
   return escolhidas.sort((a, b) => a - b).map((i) => validas[i]!);
 }
 
+/** Remove caracteres que bloqueiam alguns motores de voz (controlo, emojis, símbolos soltos). */
+function higienizar(t: string): string {
+  return t
+    .normalize("NFC")
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028-\u202F\uFEFF]/g, " ")
+    .replace(/[\p{Extended_Pictographic}\uFFFD]/gu, "")
+    .replace(/[<>{}\[\]|\\^~_*#@`=]/g, " ")
+    .replace(/([.,;:!?])\1+/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Agrupa as frases em blocos de 500–1000 caracteres (nunca o texto inteiro de uma vez). */
+function agrupar(frases: Frase[]): Frase[] {
+  const out: Frase[] = [];
+  let atual = "";
+  let pag = 1;
+  const fechar = () => {
+    const t = higienizar(atual);
+    if (t.length > 1) out.push({ texto: t, pagina: pag });
+    atual = "";
+  };
+  for (const f of frases) {
+    const t = higienizar(f.texto);
+    if (!t) continue;
+    if (!atual) pag = f.pagina;
+    if (atual && (atual.length + t.length + 1 > 1000 || (atual.length >= 500 && f.pagina !== pag))) fechar();
+    if (!atual) pag = f.pagina;
+    atual = atual ? `${atual} ${t}` : t;
+    if (atual.length >= 800) fechar();
+  }
+  if (atual) fechar();
+  return out;
+}
+
 function escolherVoz(): SpeechSynthesisVoice | undefined {
   const vozes = window.speechSynthesis.getVoices();
   return (
@@ -166,51 +201,74 @@ function escolherVoz(): SpeechSynthesisVoice | undefined {
   );
 }
 
-export default function OuvirFolheto({ chave, url }: { chave: string; url: string }) {
+const ANDROID = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+
+__REMOVE__
   const [suportado, setSuportado] = useState(true);
   const [modo, setModo] = useState<Modo | null>(null);
   const [frases, setFrases] = useState<Frase[]>([]);
   const [indice, setIndice] = useState(0);
-  const [estado, setEstado] = useState<"parado" | "a-preparar" | "a-reproduzir" | "pausado">("parado");
+  const [estado, setEstado] = useState<"parado" | "a-preparar" | "a-reproduzir" | "pausado" | "concluido">("parado");
   const [erro, setErro] = useState<string | null>(null);
   const [preparo, setPreparo] = useState("A preparar…");
   const indiceRef = useRef(0);
   const listaRef = useRef<Frase[]>([]);
   const ativo = useRef(false);
+  const falaRef = useRef<SpeechSynthesisUtterance | null>(null); // evita recolha de lixo (Chrome corta a fala)
+  const pausadoRef = useRef(false);
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) setSuportado(false);
     else window.speechSynthesis.getVoices();
+    // Chrome/Edge em computador param falas longas ao fim de ~15 s: mantém o motor ativo.
+    const t = window.setInterval(() => {
+      const s = window.speechSynthesis;
+      if (!ANDROID && ativo.current && !pausadoRef.current && s?.speaking && !s.paused) {
+        s.pause();
+        s.resume();
+      }
+    }, 10000);
     return () => {
+      window.clearInterval(t);
       ativo.current = false;
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     };
   }, []);
 
-  function falar(i: number) {
+  function falar(i: number, tentativa = 0) {
     const lista = listaRef.current;
-    if (!ativo.current || i >= lista.length) {
-      if (i >= lista.length) {
-        ativo.current = false;
-        setEstado("parado");
-        setIndice(0);
-      }
+    if (!ativo.current) return;
+    if (i >= lista.length) {
+      ativo.current = false;
+      setEstado("concluido");
+      setIndice(lista.length - 1);
       return;
     }
     indiceRef.current = i;
     setIndice(i);
     const u = new SpeechSynthesisUtterance(lista[i]!.texto);
+    falaRef.current = u;
     const voz = escolherVoz();
     if (voz) u.voice = voz;
     u.lang = voz?.lang ?? "pt-PT";
     u.rate = 1;
+    const inicio = Date.now();
     u.onend = () => {
-      if (ativo.current && indiceRef.current === i) falar(i + 1);
+      if (!ativo.current || indiceRef.current !== i) return;
+      // Terminou quase de imediato sem falar? Tenta de novo uma vez antes de avançar.
+      if (Date.now() - inicio < 300 && lista[i]!.texto.length > 40 && tentativa < 1) {
+        setTimeout(() => falar(i, tentativa + 1), 250);
+        return;
+      }
+      setTimeout(() => falar(i + 1), 80);
     };
     u.onerror = (e) => {
-      if (e.error !== "interrupted" && e.error !== "canceled" && ativo.current && indiceRef.current === i) falar(i + 1);
+      if (e.error === "interrupted" || e.error === "canceled") return;
+      if (ativo.current && indiceRef.current === i) setTimeout(() => falar(i + 1), 120);
     };
-    window.speechSynthesis.speak(u);
+    const s = window.speechSynthesis;
+    if (s.paused) s.resume();
+    s.speak(u);
   }
 
   async function iniciar(m: Modo) {
