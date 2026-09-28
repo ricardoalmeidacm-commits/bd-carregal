@@ -100,42 +100,18 @@ function Inicio() {
   return (
     <AppShell>
       {/* 1. Hero */}
-      <section className="hero-panel relative -mx-5 -mt-4 overflow-hidden px-5 pb-7 pt-8">
+      <section className="hero-panel relative -mx-5 -mt-4 overflow-hidden px-5 pb-4 pt-4">
         <div className="heritage-pattern pointer-events-none absolute inset-0" aria-hidden />
-        <div className="relative flex flex-col items-start animate-fade-in">
-          <div className="flex items-center gap-3">
-            <Marca size={52} className="drop-shadow-sm" />
-            <div className="h-9 w-px bg-border" />
-            <p className="eyebrow leading-tight">
-              Museu Municipal
-              <br />
-              de Carregal do Sal
-            </p>
-          </div>
-          <h1 className="mt-6 font-display text-[2.6rem] font-semibold leading-[1.02] tracking-tight">
-            Biblioteca
-            <br />
-            <span className="text-gradient-brand italic">Digital</span>
-          </h1>
-          <p className="mt-3 max-w-[22rem] text-[0.93rem] leading-relaxed text-muted-foreground">
-            Folhetos, roteiros, património, história e publicações do Museu Municipal de Carregal do
-            Sal.
-          </p>
-          <div className="mt-5 flex items-center gap-4 text-xs text-muted-foreground">
-            <span>
-              <strong className="font-display text-lg text-foreground">{todos.length || "—"}</strong>{" "}
-              publicações
-            </span>
-            <span className="h-4 w-px bg-border" />
-            <span>
-              <strong className="font-display text-lg text-foreground">
-                {categorias.data?.length ?? "—"}
-              </strong>{" "}
-              temas
+        <div className="relative animate-fade-in">
+          <div className="flex items-baseline justify-between gap-3">
+            <h1 className="font-display text-xl font-semibold tracking-tight">
+              Biblioteca <span className="text-gradient-brand italic">Digital</span>
+            </h1>
+            <span className="text-xs text-muted-foreground">
+              {todos.length || "—"} publicações
             </span>
           </div>
-
-          <form onSubmit={pesquisar} className="mt-5 w-full">
+          <form onSubmit={pesquisar} className="mt-3 w-full">
             <label className="glass-input flex items-center gap-2 px-3.5 py-2">
               <Search className="size-4 text-muted-foreground" />
               <input
