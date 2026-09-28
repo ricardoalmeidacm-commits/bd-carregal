@@ -144,7 +144,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      registar_visualizacao: { Args: { _slug: string }; Returns: undefined }
+      registar_visualizacao: { Args: { _slug: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "editor" | "viewer"

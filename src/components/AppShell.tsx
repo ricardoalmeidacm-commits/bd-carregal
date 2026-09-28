@@ -24,11 +24,11 @@ export function AppShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md">
-        <div className="app-shell flex items-center gap-3 py-3">
+    <div className="min-h-screen bg-background pb-28">
+      <header className="glass-bar sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
+        <div className="app-shell flex items-center gap-3 py-2.5">
           <Link to="/" className="flex items-center" aria-label="Início">
-            <MarcaHorizontal height={40} />
+            <MarcaHorizontal height={36} />
           </Link>
         </div>
       </header>
@@ -42,8 +42,8 @@ export function AppShell({
 
       <main className="app-shell py-4">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 hairline-top bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
-        <div className="app-shell flex items-stretch justify-between py-1.5">
+      <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="glass-nav mx-auto flex max-w-[26rem] items-stretch justify-between p-1.5">
           {NAV.map(({ to, label, icon: Icon }) => {
             const ativo = to === "/" ? pathname === "/" : pathname.startsWith(to);
             return (
@@ -51,11 +51,11 @@ export function AppShell({
                 key={to}
                 to={to}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[0.68rem] font-medium transition-colors",
-                  ativo ? "text-primary" : "text-muted-foreground",
+                  "flex flex-1 flex-col items-center gap-0.5 rounded-full px-2 py-2 text-[0.66rem] font-medium transition-all duration-300",
+                  ativo ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground",
                 )}
               >
-                <Icon className="size-5" strokeWidth={ativo ? 2.4 : 1.8} />
+                <Icon className="size-5" strokeWidth={ativo ? 2.3 : 1.8} />
                 {label}
               </Link>
             );
