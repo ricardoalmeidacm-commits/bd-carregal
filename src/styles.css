@@ -2,6 +2,19 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Esconde o badge "Edit with Lovable" em qualquer página da aplicação. */
+#lovable-badge,
+[id="lovable-badge"],
+iframe[id="lovable-badge"],
+div[id*="lovable-badge"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
