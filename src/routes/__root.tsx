@@ -133,6 +133,22 @@ function RootComponent() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+
+    // Salvaguarda extra: esconde o badge "Edit with Lovable" mesmo que seja
+    // injetado depois do CSS carregar (via MutationObserver).
+    const esconderBadge = () => {
+      for (const el of document.querySelectorAll("#lovable-badge, [id*='lovable-badge']")) {
+        const e = el as HTMLElement;
+        e.style.setProperty("display", "none", "important");
+        e.style.setProperty("visibility", "hidden", "important");
+        e.style.setProperty("opacity", "0", "important");
+        e.style.setProperty("pointer-events", "none", "important");
+      }
+    };
+    esconderBadge();
+    const observer = new MutationObserver(esconderBadge);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, []);
 
   return (
