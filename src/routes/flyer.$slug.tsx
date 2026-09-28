@@ -1,15 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Eye, Heart, QrCode, Share2 } from "lucide-react";
+import { ArrowLeft, Eye, Heart, QrCode, Share2 } from "lucide-react";
 import QRCode from "qrcode";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Marca } from "@/components/Marca";
+import { Rodape } from "@/components/Rodape";
 import { useFavoritos } from "@/hooks/useFavoritos";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { supabase } from "@/integrations/supabase/client";
 import type { Flyer } from "@/lib/types";
+
+const LeitorPdf = lazy(() => import("@/components/LeitorPdf"));
 
 export const Route = createFileRoute("/flyer/$slug")({
   head: ({ params }) => ({
@@ -53,11 +56,20 @@ function PaginaFlyer() {
   const urlDe = useSignedUrls([flyer.data?.pdf_url, flyer.data?.thumbnail_url]);
   const pdf = urlDe(flyer.data?.pdf_url);
 
+  const qc = useQueryClient();
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
+
   useEffect(() => {
     if (!flyer.data || contado.current) return;
     contado.current = true;
-    supabase.rpc("registar_visualizacao", { _slug: slug });
-  }, [flyer.data, slug]);
+    supabase.rpc("registar_visualizacao", { _slug: slug }).then(({ data, error }) => {
+      if (error || !data) return;
+      qc.setQueryData(["flyer", slug], (old: Flyer | null | undefined) =>
+        old ? { ...old, visualizacoes: data } : old,
+      );
+    });
+  }, [flyer.data, slug, qc]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -139,22 +151,13 @@ function PaginaFlyer() {
         </div>
         {f.descricao && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{f.descricao}</p>}
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           <button
             onClick={partilhar}
             className="surface-card flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold"
           >
             <Share2 className="size-4 text-primary" /> Partilhar
           </button>
-          <a
-            href={pdf ?? "#"}
-            download
-            target="_blank"
-            rel="noreferrer"
-            className="surface-card flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold"
-          >
-            <Download className="size-4 text-primary" /> PDF
-          </a>
           <button
             onClick={() => setMostrarQr((v) => !v)}
             className="surface-card flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold"
@@ -174,32 +177,19 @@ function PaginaFlyer() {
       </div>
 
       <div className="app-shell mt-5 flex-1 pb-8">
-        {pdf ? (
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
-            <iframe
-              src={`${pdf}#view=FitH&toolbar=1`}
-              title={f.titulo}
-              className="h-[75vh] w-full"
-            />
-          </div>
+        {pdf && montado ? (
+          <Suspense fallback={<div className="surface-card h-[72vh] animate-pulse bg-muted/50" />}>
+            <LeitorPdf url={pdf} titulo={f.titulo} />
+          </Suspense>
         ) : f.pdf_url ? (
-          <div className="surface-card h-[50vh] animate-pulse bg-muted/50" />
+          <div className="surface-card h-[72vh] animate-pulse bg-muted/50" />
         ) : (
           <p className="surface-card p-4 text-sm text-muted-foreground">
             Esta publicação ainda não tem ficheiro PDF associado.
           </p>
         )}
-        {pdf && (
-          <a
-            href={pdf}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 block rounded-xl bg-primary py-3 text-center text-sm font-semibold text-primary-foreground"
-          >
-            Abrir em ecrã inteiro
-          </a>
-        )}
       </div>
+      <Rodape />
     </div>
   );
 }

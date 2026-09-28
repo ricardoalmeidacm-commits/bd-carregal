@@ -241,6 +241,8 @@ function Inicio() {
           © {new Date().getFullYear()} Município de Carregal do Sal
         </p>
       </footer>
+      <footer className="hidden">
+      </footer>
     </AppShell>
   );
 }
