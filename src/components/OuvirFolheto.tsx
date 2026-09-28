@@ -203,7 +203,7 @@ function escolherVoz(): SpeechSynthesisVoice | undefined {
 
 const ANDROID = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 
-__REMOVE__
+export default function OuvirFolheto({ chave, url }: { chave: string; url: string }) {
   const [suportado, setSuportado] = useState(true);
   const [modo, setModo] = useState<Modo | null>(null);
   const [frases, setFrases] = useState<Frase[]>([]);
@@ -297,11 +297,19 @@ __REMOVE__
           }
         }
       }
-      listaRef.current = lista;
-      setFrases(lista);
+      const blocos = agrupar(lista);
+      if (!blocos.length) {
+        setErro("Este folheto não tem texto legível para leitura áudio.");
+        setEstado("parado");
+        return;
+      }
+      listaRef.current = blocos;
+      setFrases(blocos);
       ativo.current = true;
+      pausadoRef.current = false;
       setEstado("a-reproduzir");
-      falar(0);
+      // Pequena pausa após cancel(): no Chrome/Android um speak() imediato é descartado.
+      setTimeout(() => falar(0), 150);
     } catch {
       setErro("Não foi possível preparar a leitura áudio.");
       setEstado("parado");
@@ -309,21 +317,32 @@ __REMOVE__
   }
 
   function pausar() {
+    pausadoRef.current = true;
     window.speechSynthesis.pause();
     setEstado("pausado");
   }
   function retomar() {
-    // Alguns browsers móveis não retomam de forma fiável: recomeça a frase atual.
-    if (window.speechSynthesis.paused && window.speechSynthesis.speaking) window.speechSynthesis.resume();
+    pausadoRef.current = false;
+    if (estado === "concluido") {
+      ativo.current = true;
+      setEstado("a-reproduzir");
+      setTimeout(() => falar(0), 100);
+      return;
+    }
+    // Android/iOS nem sempre retomam: recomeça o bloco atual.
+    if (!ANDROID && window.speechSynthesis.paused && window.speechSynthesis.speaking) window.speechSynthesis.resume();
     else {
       ativo.current = true;
+      const i = indiceRef.current;
+      indiceRef.current = -1;
       window.speechSynthesis.cancel();
-      falar(indiceRef.current);
+      setTimeout(() => falar(i), 150);
     }
     setEstado("a-reproduzir");
   }
   function parar() {
     ativo.current = false;
+    pausadoRef.current = false;
     window.speechSynthesis.cancel();
     setEstado("parado");
     setIndice(0);
@@ -332,10 +351,11 @@ __REMOVE__
   function saltar(d: number) {
     const i = Math.min(Math.max(0, indiceRef.current + d), listaRef.current.length - 1);
     ativo.current = true;
+    pausadoRef.current = false;
     indiceRef.current = -1;
     window.speechSynthesis.cancel();
     setEstado("a-reproduzir");
-    setTimeout(() => falar(i), 60);
+    setTimeout(() => falar(i), 150);
   }
 
   if (!suportado) {
@@ -347,9 +367,16 @@ __REMOVE__
   }
 
   const emCurso = estado !== "parado";
-  const progresso = frases.length ? Math.round(((indice + 1) / frases.length) * 100) : 0;
+  const progresso =
+    estado === "concluido" ? 100 : frases.length ? Math.round((indice / frases.length) * 100) : 0;
   const rotulo =
-    estado === "a-preparar" ? preparo : estado === "pausado" ? "Em pausa" : "A reproduzir";
+    estado === "a-preparar"
+      ? preparo
+      : estado === "pausado"
+        ? "Pausado"
+        : estado === "concluido"
+          ? "Concluído"
+          : "A reproduzir";
 
   return (
     <section aria-label="Leitura áudio" className="mt-3">
