@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Audio playback uses a two-step prepare-then-play flow so mobile browsers receive `speechSynthesis.speak()` directly from a user gesture.
