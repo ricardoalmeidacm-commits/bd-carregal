@@ -8,7 +8,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 type Frase = { texto: string; pagina: number };
 type Modo = "folheto" | "resumo";
 
-const PREFIXO = "bdmcs:audio2:";
+const PREFIXO = "bdmcs:audio3:";
 
 /** Extrai o texto do PDF (com cache local) e divide-o em frases com o número da página. */
 async function obterFrases(
@@ -36,7 +36,8 @@ async function obterFrases(
     if (final.length < 40) final = await reconhecer(p, aoProgresso, n, doc.numPages);
     for (const f of final.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) ?? []) {
       const t = f.trim();
-      if (t.length > 2 && legivel(t)) frases.push(...partir(t).map((x) => ({ texto: x, pagina: n })));
+      if (t.length > 2)
+        frases.push(...partir(limpar(t)).filter(legivel).map((x) => ({ texto: x, pagina: n })));
     }
   }
   doc.destroy();
@@ -78,6 +79,18 @@ async function terminarOcr() {
 
 const EN = new Set("the and was were his her with this that from which of on in at by he she it is are born son".split(" "));
 const PT = new Set("de do da dos das que em no na com uma um foi era para pelo pela os as ao e".split(" "));
+
+const bom = (w: string) =>
+  /^[(]?\d+[ºª°,.;:)]*$/.test(w) ||
+  (/^[«"“(]?[A-Za-zÀ-ÿ]{2,}[a-zà-ÿ]*[.,;:!?»"”)]*$/.test(w) && /[aeiouáéíóúâêôãõà]/i.test(w) && !/^[A-Z]{2,4}[,.)]*$/.test(w)) ||
+  /^(a|o|e|é|à)$/i.test(w);
+
+/** Remove ruído no início da frase: começa na primeira sequência de 4 palavras válidas. */
+function limpar(t: string): string {
+  const tk = t.split(/\s+/);
+  for (let i = 0; i + 4 <= tk.length; i++) if (tk.slice(i, i + 4).every(bom)) return tk.slice(i).join(" ");
+  return t;
+}
 
 /** Descarta ruído do reconhecimento de imagem e frases em inglês (folhetos bilingues). */
 function legivel(t: string): boolean {
