@@ -368,8 +368,8 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
         setAviso("O telemóvel não apresentou nenhuma voz. Verifique se existe uma voz instalada nas definições de idioma.");
       } else {
         const voz = vozes[0];
-        setVozNome(voz.name);
-        if (!voz.lang.toLowerCase().replace("_", "-").startsWith("pt")) {
+        setVozNome(voz?.name ?? null);
+        if (voz && !voz.lang.toLowerCase().replace("_", "-").startsWith("pt")) {
           setAviso("Não foi encontrada uma voz portuguesa; será usada a melhor voz disponível no dispositivo.");
         }
       }
