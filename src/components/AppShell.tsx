@@ -3,6 +3,7 @@ import { Home, Library, Heart, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { MarcaHorizontal } from "@/components/Marca";
+import { Rodape } from "@/components/Rodape";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -41,6 +42,7 @@ export function AppShell({
       )}
 
       <main className="app-shell py-4">{children}</main>
+      <Rodape />
 
       <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="glass-nav mx-auto flex max-w-[26rem] items-stretch justify-between p-1.5">

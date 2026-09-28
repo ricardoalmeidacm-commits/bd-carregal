@@ -57,7 +57,7 @@ export default function LeitorPdf({ url, titulo }: { url: string; titulo: string
       c.height = vp.height;
       c.style.width = `${vp.width / dpr}px`;
       c.style.height = `${vp.height / dpr}px`;
-      tarefa = p.render({ canvas: c, viewport: vp });
+      tarefa = p.render({ canvasContext: c.getContext("2d")!, viewport: vp });
       tarefa.promise.then(() => !cancelado && setADesenhar(false)).catch(() => {});
     });
     return () => {
