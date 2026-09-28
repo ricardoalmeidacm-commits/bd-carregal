@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Flyer } from "@/lib/types";
 
 const LeitorPdf = lazy(() => import("@/components/LeitorPdf"));
+const OuvirFolheto = lazy(() => import("@/components/OuvirFolheto"));
 
 export const Route = createFileRoute("/flyer/$slug")({
   head: ({ params }) => ({
@@ -165,6 +166,12 @@ function PaginaFlyer() {
             <QrCode className="size-4 text-primary" /> QR Code
           </button>
         </div>
+
+        {pdf && montado && f.pdf_url && (
+          <Suspense fallback={null}>
+            <OuvirFolheto chave={f.pdf_url} url={pdf} />
+          </Suspense>
+        )}
 
         {mostrarQr && qr && (
           <div className="surface-card mt-3 flex flex-col items-center gap-2 p-4">
