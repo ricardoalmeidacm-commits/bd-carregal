@@ -192,48 +192,75 @@ function agrupar(frases: Frase[]): Frase[] {
   return out;
 }
 
-function escolherVoz(): SpeechSynthesisVoice | undefined {
-  const vozes = window.speechSynthesis.getVoices();
-  return (
-    vozes.find((v) => v.lang.toLowerCase() === "pt-pt") ??
-    vozes.find((v) => v.lang.toLowerCase().replace("_", "-") === "pt-pt") ??
-    vozes.find((v) => v.lang.toLowerCase().startsWith("pt"))
-  );
+function ordenarVozes(vozes: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
+  const pontuar = (v: SpeechSynthesisVoice) => {
+    const lang = v.lang.toLowerCase().replace("_", "-");
+    const nome = v.name.toLowerCase();
+    if (lang === "pt-pt" && /portugal|europe|português/i.test(nome)) return 5;
+    if (lang === "pt-pt") return 4;
+    if (lang.startsWith("pt")) return 3;
+    if (v.default) return 2;
+    return 1;
+  };
+  return [...vozes].sort((a, b) => pontuar(b) - pontuar(a));
 }
 
-const ANDROID = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+async function carregarVozes(): Promise<SpeechSynthesisVoice[]> {
+  const synth = window.speechSynthesis;
+  const existentes = synth.getVoices();
+  if (existentes.length) return ordenarVozes(existentes);
+  return new Promise((resolve) => {
+    let terminou = false;
+    const terminar = () => {
+      if (terminou) return;
+      terminou = true;
+      synth.removeEventListener("voiceschanged", terminar);
+      resolve(ordenarVozes(synth.getVoices()));
+    };
+    synth.addEventListener("voiceschanged", terminar, { once: true });
+    window.setTimeout(terminar, 1500);
+  });
+}
+
+type Estado = "parado" | "a-preparar" | "pronto" | "a-reproduzir" | "pausado" | "concluido" | "erro";
 
 export default function OuvirFolheto({ chave, url }: { chave: string; url: string }) {
   const [suportado, setSuportado] = useState(true);
   const [modo, setModo] = useState<Modo | null>(null);
   const [frases, setFrases] = useState<Frase[]>([]);
   const [indice, setIndice] = useState(0);
-  const [estado, setEstado] = useState<"parado" | "a-preparar" | "a-reproduzir" | "pausado" | "concluido">("parado");
+  const [estado, setEstado] = useState<Estado>("parado");
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [vozNome, setVozNome] = useState<string | null>(null);
   const [preparo, setPreparo] = useState("A preparar…");
   const indiceRef = useRef(0);
   const listaRef = useRef<Frase[]>([]);
   const ativo = useRef(false);
-  const falaRef = useRef<SpeechSynthesisUtterance | null>(null); // evita recolha de lixo (Chrome corta a fala)
+  const falaRef = useRef<SpeechSynthesisUtterance | null>(null);
   const pausadoRef = useRef(false);
+  const vozesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const vozRef = useRef(0);
+  const iniciouRef = useRef(false);
+  const vigiaRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!("speechSynthesis" in window)) setSuportado(false);
-    else window.speechSynthesis.getVoices();
-    // Chrome/Edge em computador param falas longas ao fim de ~15 s: mantém o motor ativo.
-    const t = window.setInterval(() => {
-      const s = window.speechSynthesis;
-      if (!ANDROID && ativo.current && !pausadoRef.current && s?.speaking && !s.paused) {
-        s.pause();
-        s.resume();
-      }
-    }, 10000);
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) setSuportado(false);
+    else void carregarVozes().then((v) => { vozesRef.current = v; });
     return () => {
-      window.clearInterval(t);
+      if (vigiaRef.current !== null) window.clearTimeout(vigiaRef.current);
       ativo.current = false;
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     };
   }, []);
+
+  function falha(mensagem: string) {
+    ativo.current = false;
+    pausadoRef.current = false;
+    window.speechSynthesis.cancel();
+    setErro(`${mensagem} Confirme o volume multimédia do telemóvel e toque em “Tentar novamente”.`);
+    setEstado("erro");
+  }
 
   function falar(i: number, tentativa = 0) {
     const lista = listaRef.current;
@@ -246,34 +273,60 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
     }
     indiceRef.current = i;
     setIndice(i);
+    iniciouRef.current = false;
     const u = new SpeechSynthesisUtterance(lista[i]!.texto);
     falaRef.current = u;
-    const voz = escolherVoz();
+    const voz = vozesRef.current[vozRef.current];
     if (voz) u.voice = voz;
     u.lang = voz?.lang ?? "pt-PT";
     u.rate = 1;
-    const inicio = Date.now();
+    u.volume = 1;
+    u.pitch = 1;
+    u.onstart = () => {
+      iniciouRef.current = true;
+      if (vigiaRef.current !== null) window.clearTimeout(vigiaRef.current);
+      setEstado("a-reproduzir");
+    };
     u.onend = () => {
+      if (vigiaRef.current !== null) window.clearTimeout(vigiaRef.current);
       if (!ativo.current || indiceRef.current !== i) return;
-      // Terminou quase de imediato sem falar? Tenta de novo uma vez antes de avançar.
-      if (Date.now() - inicio < 300 && lista[i]!.texto.length > 40 && tentativa < 1) {
-        setTimeout(() => falar(i, tentativa + 1), 250);
+      if (!iniciouRef.current) {
+        tentarOutraVoz(i, tentativa);
         return;
       }
-      setTimeout(() => falar(i + 1), 80);
+      falar(i + 1);
     };
     u.onerror = (e) => {
       if (e.error === "interrupted" || e.error === "canceled") return;
-      if (ativo.current && indiceRef.current === i) setTimeout(() => falar(i + 1), 120);
+      if (ativo.current && indiceRef.current === i) tentarOutraVoz(i, tentativa);
     };
     const s = window.speechSynthesis;
     if (s.paused) s.resume();
     s.speak(u);
+    vigiaRef.current = window.setTimeout(() => {
+      if (ativo.current && indiceRef.current === i && !iniciouRef.current) tentarOutraVoz(i, tentativa);
+    }, 3500);
+  }
+
+  function tentarOutraVoz(i: number, tentativa: number) {
+    if (!ativo.current || indiceRef.current !== i) return;
+    window.speechSynthesis.cancel();
+    if (tentativa < Math.min(2, vozesRef.current.length - 1)) {
+      vozRef.current += 1;
+      const voz = vozesRef.current[vozRef.current];
+      setVozNome(voz?.name ?? null);
+      window.setTimeout(() => falar(i, tentativa + 1), 120);
+      return;
+    }
+    falha("O navegador não conseguiu iniciar a voz disponível.");
   }
 
   async function iniciar(m: Modo) {
+    ativo.current = false;
     window.speechSynthesis.cancel();
     setErro(null);
+    setAviso(null);
+    setVozNome(null);
     setModo(m);
     setEstado("a-preparar");
     try {
@@ -305,11 +358,23 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
       }
       listaRef.current = blocos;
       setFrases(blocos);
-      ativo.current = true;
+      indiceRef.current = 0;
+      setIndice(0);
       pausadoRef.current = false;
-      setEstado("a-reproduzir");
-      // Pequena pausa após cancel(): no Chrome/Android um speak() imediato é descartado.
-      setTimeout(() => falar(0), 150);
+      const vozes = await carregarVozes();
+      vozesRef.current = vozes;
+      vozRef.current = 0;
+      if (!vozes.length) {
+        setAviso("O telemóvel não apresentou nenhuma voz. Verifique se existe uma voz instalada nas definições de idioma.");
+      } else {
+        const voz = vozes[0];
+        setVozNome(voz?.name ?? null);
+        if (voz && !voz.lang.toLowerCase().replace("_", "-").startsWith("pt")) {
+          setAviso("Não foi encontrada uma voz portuguesa; será usada a melhor voz disponível no dispositivo.");
+        }
+      }
+      // A extração assíncrona perde a autorização do toque no iPhone. O som começa num novo toque explícito.
+      setEstado("pronto");
     } catch {
       setErro("Não foi possível preparar a leitura áudio.");
       setEstado("parado");
@@ -322,29 +387,36 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
     setEstado("pausado");
   }
   function retomar() {
+    setErro(null);
     pausadoRef.current = false;
-    if (estado === "concluido") {
+    if (estado === "pronto" || estado === "concluido" || estado === "erro") {
       ativo.current = true;
+      if (estado === "concluido") indiceRef.current = 0;
       setEstado("a-reproduzir");
-      setTimeout(() => falar(0), 100);
+      // Chamada síncrona durante o toque: necessária para desbloquear som no iPhone/Android.
+      falar(indiceRef.current);
       return;
     }
-    // Android/iOS nem sempre retomam: recomeça o bloco atual.
-    if (!ANDROID && window.speechSynthesis.paused && window.speechSynthesis.speaking) window.speechSynthesis.resume();
-    else {
+    if (window.speechSynthesis.paused && window.speechSynthesis.speaking) {
+      ativo.current = true;
+      window.speechSynthesis.resume();
+    } else {
       ativo.current = true;
       const i = indiceRef.current;
       indiceRef.current = -1;
       window.speechSynthesis.cancel();
-      setTimeout(() => falar(i), 150);
+      indiceRef.current = i;
+      falar(i);
     }
     setEstado("a-reproduzir");
   }
   function parar() {
+    if (vigiaRef.current !== null) window.clearTimeout(vigiaRef.current);
     ativo.current = false;
     pausadoRef.current = false;
     window.speechSynthesis.cancel();
     setEstado("parado");
+    setErro(null);
     setIndice(0);
     indiceRef.current = 0;
   }
@@ -355,7 +427,8 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
     indiceRef.current = -1;
     window.speechSynthesis.cancel();
     setEstado("a-reproduzir");
-    setTimeout(() => falar(i), 150);
+    indiceRef.current = i;
+    falar(i);
   }
 
   if (!suportado) {
@@ -374,8 +447,12 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
       ? preparo
       : estado === "pausado"
         ? "Pausado"
+        : estado === "pronto"
+          ? "Pronto a reproduzir"
         : estado === "concluido"
           ? "Concluído"
+          : estado === "erro"
+            ? "Não foi possível reproduzir"
           : "A reproduzir";
 
   return (
@@ -398,9 +475,12 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
       </div>
 
       {erro && (
-        <p role="alert" className="mt-2 text-xs text-destructive">
-          {erro}
-        </p>
+        <div role="alert" className="surface-card mt-2 p-3 text-xs text-destructive">
+          <p>{erro}</p>
+          <button onClick={retomar} className="mt-2 font-semibold text-primary underline underline-offset-2">
+            Tentar novamente
+          </button>
+        </div>
       )}
 
       {emCurso && (
@@ -421,6 +501,8 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
               <span className="text-muted-foreground">Página {frases[indice]!.pagina}</span>
             )}
           </div>
+          {vozNome && <p className="mt-1 text-xs text-muted-foreground">Voz: {vozNome}</p>}
+          {aviso && <p className="mt-2 text-xs text-muted-foreground">{aviso}</p>}
           <div
             className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
             role="progressbar"
@@ -431,6 +513,16 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
           >
             <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progresso}%` }} />
           </div>
+          <p className="mt-1 text-right text-xs text-muted-foreground">{progresso}%</p>
+          {frases[indice] && estado !== "a-preparar" && (
+            <p className="mt-2 line-clamp-4 text-xs leading-relaxed text-muted-foreground">{frases[indice]!.texto}</p>
+          )}
+          {modo === "resumo" && frases.length > 0 && estado !== "a-preparar" && (
+            <details className="mt-2 text-xs text-muted-foreground">
+              <summary className="cursor-pointer font-semibold text-foreground">Resumo gerado</summary>
+              <p className="mt-2 leading-relaxed">{frases.map((f) => f.texto).join(" ")}</p>
+            </details>
+          )}
           <div className="mt-2 flex items-center justify-center gap-1">
             <Controlo label="Recuar" onClick={() => saltar(-1)} disabled={estado === "a-preparar"}>
               <SkipBack className="size-4" />
@@ -440,7 +532,7 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
                 <Pause className="size-5" />
               </Controlo>
             ) : (
-              <Controlo label="Reproduzir" onClick={retomar} destaque disabled={estado === "a-preparar"}>
+              <Controlo label={estado === "pausado" ? "Continuar" : "Reproduzir"} onClick={retomar} destaque disabled={estado === "a-preparar"}>
                 <Play className="size-5" />
               </Controlo>
             )}
