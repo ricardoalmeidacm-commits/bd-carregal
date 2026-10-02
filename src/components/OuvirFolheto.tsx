@@ -8,7 +8,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 type Frase = { texto: string; pagina: number };
 type Modo = "folheto" | "resumo";
 
-const PREFIXO = "bdmcs:audio3:";
+const PREFIXO = "bdmcs:audio4:";
 
 /** Extrai o texto do PDF (com cache local) e divide-o em frases com o número da página. */
 async function obterFrases(
@@ -23,8 +23,9 @@ async function obterFrases(
     /* ignora */
   }
   const doc = await pdfjs.getDocument({ url }).promise;
-  const frases: Frase[] = [];
-  for (let n = 1; n <= doc.numPages; n++) {
+  let frases: Frase[] = [];
+  // A primeira página (capa) nunca é lida.
+  for (let n = doc.numPages > 1 ? 2 : 1; n <= doc.numPages; n++) {
     const p = await doc.getPage(n);
     const c = await p.getTextContent();
     const texto = c.items
@@ -37,9 +38,10 @@ async function obterFrases(
     for (const f of final.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) ?? []) {
       const t = f.trim();
       if (t.length > 2)
-        frases.push(...partir(limpar(t)).filter(legivel).map((x) => ({ texto: x, pagina: n })));
+        frases.push(...partir(limpar(t)).filter((x) => legivel(x) && relevante(x)).map((x) => ({ texto: x, pagina: n })));
     }
   }
+  frases = semRepetidos(frases);
   doc.destroy();
   await terminarOcr();
   try {
@@ -48,6 +50,31 @@ async function obterFrases(
     /* sem espaço */
   }
   return frases;
+}
+
+/** Conteúdos administrativos/técnicos: contactos, horários, créditos, fichas técnicas. */
+const IRRELEVANTE =
+  /(@|https?:|www\.|\.pt\b|\.com\b|\btel\.?\b|telefone|telem[óo]vel|\bfax\b|e-?mail|contact|hor[áa]rio|aberto (de|das|ao)|encerra|segunda a|ter[çc]a a|\d{1,2}[h:]\d{2}|\b\d{3}\s?\d{3}\s?\d{3}\b|ficha t[ée]cnica|cr[ée]ditos|impress[ãa]o|tiragem|exemplares|dep[óo]sito legal|isbn|design|grafismo|pagina[çc][ãa]o|fotografias?:|textos?:|tradu[çc][ãa]o|translation|edi[çc][ãa]o:|propriedade:|apoio:|organiza[çc][ãa]o:|promotor|financiad|portugal 20[23]0|feder\b|copyright|©|direitos reservados)/i;
+function relevante(t: string): boolean {
+  return !IRRELEVANTE.test(t);
+}
+
+/** Remove cabeçalhos/rodapés repetidos em várias páginas e duplicados. */
+function semRepetidos(frases: Frase[]): Frase[] {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-zà-ÿ]/g, "");
+  const pags = new Map<string, Set<number>>();
+  frases.forEach((f) => {
+    const k = norm(f.texto);
+    if (!pags.has(k)) pags.set(k, new Set());
+    pags.get(k)!.add(f.pagina);
+  });
+  const vistos = new Set<string>();
+  return frases.filter((f) => {
+    const k = norm(f.texto);
+    if ((pags.get(k)?.size ?? 0) > 1 || vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
 }
 
 // Reconhecimento de texto gratuito, no próprio dispositivo, para PDFs digitalizados/sem camada de texto.
@@ -77,7 +104,7 @@ async function terminarOcr() {
   await w.terminate();
 }
 
-const EN = new Set("the and was were his her with this that from which of on in at by he she it is are born son".split(" "));
+const EN = new Set("the and was were his her with this that from which of on in at by he she it is are born son to an as be has have had its their they there who would also into after during between century church house built work years where when museum village town".split(" "));
 const PT = new Set("de do da dos das que em no na com uma um foi era para pelo pela os as ao e".split(" "));
 
 const bom = (w: string) =>
@@ -101,7 +128,8 @@ function legivel(t: string): boolean {
   const low = tokens.map((w) => w.toLowerCase().replace(/[^a-zà-ÿ]/g, ""));
   const en = low.filter((w) => EN.has(w)).length;
   const pt = low.filter((w) => PT.has(w)).length;
-  return !(en > pt);
+  if (/[ãõçáéíóúâêô]/i.test(t)) return en <= pt;
+  return en === 0 || en < pt;
 }
 
 /** Frases muito longas são cortadas (o Safari/Chrome interrompem falas longas). */
@@ -143,7 +171,8 @@ function resumir(frases: Frase[]): Frase[] {
     const base = ws.reduce((s, w) => s + (freq.get(w) ?? 0), 0) / Math.max(4, ws.length);
     const posicao = i < 3 ? 1.5 : 1; // início costuma apresentar o tema
     const numeros = /\b(1[0-9]{3}|20[0-9]{2}|século)\b/i.test(f.texto) ? 1.2 : 1; // informação histórica
-    return { i, s: base * posicao * numeros };
+    const cultura = /(hist[óo]ri|patrim[óo]ni|monumento|igreja|capela|solar|anta|dólmen|romano|medieval|arqueol|museu|nasceu|faleceu|viveu|constru[íi]d|séc|tradi[çc]|lenda|cultur)/i.test(f.texto) ? 1.4 : 1;
+    return { i, s: base * posicao * numeros * cultura };
   });
   const totalPalavras = validas.reduce((s, f) => s + f.texto.split(" ").length, 0);
   const alvo = Math.min(280, Math.max(80, Math.round(totalPalavras * 0.2))); // ~150 palavras/min
