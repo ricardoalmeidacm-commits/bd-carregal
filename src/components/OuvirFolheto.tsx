@@ -1,3 +1,4 @@
+import { gerarAudioguia } from "@/lib/audioguia.functions";
 import { Headphones, Loader2, Pause, Play, SkipBack, SkipForward, Square, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as pdfjs from "pdfjs-dist";
@@ -225,11 +226,18 @@ function ordenarVozes(vozes: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
   const pontuar = (v: SpeechSynthesisVoice) => {
     const lang = v.lang.toLowerCase().replace("_", "-");
     const nome = v.name.toLowerCase();
-    if (lang === "pt-pt" && /portugal|europe|português/i.test(nome)) return 5;
-    if (lang === "pt-pt") return 4;
-    if (lang.startsWith("pt")) return 3;
-    if (v.default) return 2;
-    return 1;
+    let p = 0;
+    if (lang === "pt-pt") p += 100;
+    else if (lang.startsWith("pt")) p += 50;
+    else if (v.default) p += 5;
+    if (/neural|natural|online|enhanced|premium|melhorad|aprimorad/.test(nome)) p += 30;
+    if (/duarte|raquel|fernanda|catarina|ines|inês/.test(nome)) p += 15;
+    if (/google/.test(nome)) p += 12;
+    if (/microsoft/.test(nome)) p += 8;
+    if (/joana/.test(nome) && !/neural|enhanced|premium/.test(nome)) p -= 10;
+    if (/compact|espeak|legacy/.test(nome)) p -= 20;
+    if (!v.localService) p += 3;
+    return p;
   };
   return [...vozes].sort((a, b) => pontuar(b) - pontuar(a));
 }
@@ -308,7 +316,7 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
     const voz = vozesRef.current[vozRef.current];
     if (voz) u.voice = voz;
     u.lang = voz?.lang ?? "pt-PT";
-    u.rate = 1;
+    u.rate = 0.95;
     u.volume = 1;
     u.pitch = 1;
     u.onstart = () => {
@@ -367,7 +375,22 @@ export default function OuvirFolheto({ chave, url }: { chave: string; url: strin
         return;
       }
       let lista = todas;
-      if (m === "resumo") {
+      const kg = `${chave}:guia:${m}`;
+      const cg = localStorage.getItem(PREFIXO + kg);
+      if (cg) lista = JSON.parse(cg) as Frase[];
+      else {
+        setPreparo(m === "resumo" ? "A preparar o resumo da audioguia…" : "A preparar a audioguia…");
+        const guia = await gerarAudioguia({ data: { modo: m === "resumo" ? "resumo" : "folheto", blocos: todas } }).catch(() => null);
+        if (guia?.length) {
+          lista = guia.flatMap((g) => partir(g.texto).map((t) => ({ texto: t, pagina: g.pagina })));
+          try {
+            localStorage.setItem(PREFIXO + kg, JSON.stringify(lista));
+          } catch {
+            /* ignora */
+          }
+        }
+      }
+      if (!cg && lista === todas && m === "resumo") {
         const k = `${chave}:resumo`;
         const g = localStorage.getItem(PREFIXO + k);
         lista = g ? (JSON.parse(g) as Frase[]) : resumir(todas);
