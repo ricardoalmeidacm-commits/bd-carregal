@@ -34,21 +34,23 @@ ${
 }
 Responde APENAS com JSON: {"paragrafos":[{"pagina":<número da página de origem>,"texto":"..."}]} com parágrafos de 300 a 900 caracteres.`;
     try {
-      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: regras },
-            { role: "user", content: `Texto extraído do folheto (a partir da página 2):\n${fonte}` },
-          ],
+          model: "openai/gpt-6-astra",
+          instructions: regras,
+          input: `Texto extraído do folheto (a partir da página 2):\n${fonte}`,
         }),
       });
       if (!r.ok) return null;
-      const j = (await r.json()) as { choices?: { message?: { content?: string } }[] };
-      const bruto = j.choices?.[0]?.message?.content ?? "";
+      const j = (await r.json()) as {
+        output_text?: string;
+        output?: { content?: { type?: string; text?: string }[] }[];
+      };
+      const bruto =
+        j.output_text ??
+        (j.output ?? []).flatMap((o) => o.content ?? []).map((c) => c.text ?? "").join("");
       const m = bruto.match(/\{[\s\S]*\}/);
       if (!m) return null;
       const p = JSON.parse(m[0]) as { paragrafos?: { pagina?: number; texto?: string }[] };
