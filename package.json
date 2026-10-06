@@ -9,7 +9,9 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "start": "node .output/server/index.mjs",
+    "start:pm2": "pm2 start ecosystem.config.cjs --env production"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -91,5 +93,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
