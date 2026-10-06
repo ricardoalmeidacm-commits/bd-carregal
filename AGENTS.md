@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Audio playback uses a two-step prepare-then-play flow so mobile browsers receive `speechSynthesis.speak()` directly from a user gesture.
+- Self-hosted builds use Nitro preset node-server (vite.config.ts) — target is Hetzner/PM2/Nginx; Lovable builds pin their own preset.
